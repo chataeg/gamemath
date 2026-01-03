@@ -68,14 +68,23 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 	static float scaleMin = 5.f;
 	static float scaleMax = 20.f;
 	static float scaleSpeed = 20.f;
+	static float duration = 1.5f;
+	static float elapsedTime = 0.f;
 
 	Vector2 inputVector = Vector2(input.GetAxis(InputAxis::XAxis), input.GetAxis(InputAxis::YAxis)).GetNormalize();
 	Vector2 deltaPosition = inputVector * moveSpeed * InDeltaSeconds;
 	float deltaScale = input.GetAxis(InputAxis::ZAxis) * scaleSpeed * InDeltaSeconds;
 
 	// 물체의 최종 상태 설정
+
+	elapsedTime += InDeltaSeconds;
+	elapsedTime = Math::FMod(elapsedTime, duration);
+
+	float currentRad = elapsedTime / duration * Math::TwoPI;
+	float alpha = (sinf(currentRad) + 1) / 0.5f;
+
 	currentPosition += deltaPosition;
-	currentScale = Math::Clamp(currentScale + deltaScale, scaleMin, scaleMax);
+	currentScale = Math::Lerp(scaleMin, scaleMax, alpha);
 }
 
 // 렌더링 로직을 담당하는 함수
@@ -92,6 +101,7 @@ void SoftRenderer::Render2D()
 	float rad = 0.f;
 	static float increment = 0.001f;
 	static std::vector<Vector2> hearts;
+	HSVColor hsv(0.f, 1.f, 0.85f);
 
 	// 하트를 구성하는 점 생성
 	if (hearts.empty())
@@ -109,9 +119,12 @@ void SoftRenderer::Render2D()
 		}
 	}
 
+	rad = 0.f;
 	for (auto const& v : hearts)
 	{
-		r.DrawPoint(v * currentScale + currentPosition, LinearColor::Blue);
+		hsv.H = rad / Math::TwoPI;
+		r.DrawPoint(v * currentScale + currentPosition, hsv.ToLinearColor());
+		rad += increment;
 	}
 
 	// 현재 위치와 스케일을 화면에 출력
