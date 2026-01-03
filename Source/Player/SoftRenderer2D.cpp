@@ -55,6 +55,9 @@ void SoftRenderer::LoadScene2D()
 // 게임 로직과 렌더링 로직이 공유하는 변수
 Vector2 pointAPosition(100.f, 100.f);
 Vector2 pointBPosition = Vector2(pointAPosition.X + 100.f, pointAPosition.Y + 100.f);
+Vector2 boxPosition(-200.f, 100.f);
+
+float currentBoxDegree = 0.f; 
 
 // 게임 로직을 담당하는 함수
 void SoftRenderer::Update2D(float InDeltaSeconds)
@@ -65,13 +68,16 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 
 	// 게임 로직의 로컬 변수
 	static float moveSpeed = 100.f;
+	static float rotateSpeed = 180.f;
 
 	Vector2 inputVector = Vector2{ input.GetAxis(InputAxis::XAxis),input.GetAxis(InputAxis::YAxis) };
 	Vector2 deltaPosition = inputVector * moveSpeed * InDeltaSeconds;
 
 	pointBPosition += deltaPosition;
 
-	
+	float deltaDegree = input.GetAxis(InputAxis::WAxis) * rotateSpeed * InDeltaSeconds;
+
+	currentBoxDegree += deltaDegree;
 }
 
 // 렌더링 로직을 담당하는 함수
@@ -117,11 +123,37 @@ void SoftRenderer::Render2D()
 	r.DrawLine(pointAPosition, pointBPosition, LinearColor::Cyan);
 	
 	Vector2 pointA2B = pointBPosition - pointAPosition;
-	
+
+	static float halfSize = 100.f;
+	static std::vector<Vector2> squares;
+
+	if (squares.empty())
+	{
+		for (float x = -halfSize; x <= halfSize; x += 0.25f)
+		{
+			for (float y = -halfSize; y <= halfSize; y += 0.25f)
+			{
+				squares.push_back(Vector2(x, y));
+			}
+		}
+	}
+
+	float sin = 0.f, cos = 0.f;
+	Math::GetSinCos(sin, cos, currentBoxDegree);
+
+	for (const auto& iter : squares)
+	{
+		Vector2 rotatedV = Vector2(iter.X * cos - iter.Y * sin, iter.X * sin + iter.Y * cos);
+
+		Vector2 translatedV = boxPosition + rotatedV;
+		r.DrawPoint(translatedV, LinearColor::Black);
+	}
+
+
 	r.PushStatisticText("Point A Coordinate : " + pointAPosition.ToString());
 	r.PushStatisticText("Point B Coordinate : " + pointBPosition.ToString());
-	r.PushStatisticText("Degree : " + std::to_string(atan2(pointA2B.Y, pointA2B.X) * (180.f / Math::PI)));
-
+	r.PushStatisticText("Vector A2B Degree : " + std::to_string(atan2(pointA2B.Y, pointA2B.X) * (180.f / Math::PI)));
+	r.PushStatisticText("Box Degree : " + std::to_string(currentBoxDegree));
 }
 
 // 메시를 그리는 함수
