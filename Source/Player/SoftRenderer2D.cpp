@@ -53,8 +53,8 @@ void SoftRenderer::LoadScene2D()
 }
 
 // 게임 로직과 렌더링 로직이 공유하는 변수
-Vector2 currentPosition(100.f, 100.f);
-
+Vector2 pointAPosition(100.f, 100.f);
+Vector2 pointBPosition = Vector2(pointAPosition.X + 100.f, pointAPosition.Y + 100.f);
 
 // 게임 로직을 담당하는 함수
 void SoftRenderer::Update2D(float InDeltaSeconds)
@@ -69,7 +69,7 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 	Vector2 inputVector = Vector2{ input.GetAxis(InputAxis::XAxis),input.GetAxis(InputAxis::YAxis) };
 	Vector2 deltaPosition = inputVector * moveSpeed * InDeltaSeconds;
 
-	currentPosition += deltaPosition;
+	pointBPosition += deltaPosition;
 
 	
 }
@@ -88,21 +88,39 @@ void SoftRenderer::Render2D()
 
 	// 밝은 회색의 선을 사용해 벡터를 표현
 	static float lineLength = 500.f;
-	Vector2 lineStart = currentPosition * lineLength;
-	Vector2 lineEnd = currentPosition * -lineLength;
-	r.DrawLine(lineStart, lineEnd, LinearColor::LightGray);
+	Vector2 lineStart = pointAPosition * lineLength;
+	Vector2 lineEnd = pointAPosition * -lineLength;
+	//r.DrawLine(lineStart, lineEnd, LinearColor::LightGray);
 
-	r.DrawPoint(currentPosition, LinearColor::Blue);
-	r.DrawPoint(currentPosition + Vector2::UnitX, LinearColor::Blue);
-	r.DrawPoint(currentPosition - Vector2::UnitX, LinearColor::Blue);
-	r.DrawPoint(currentPosition + Vector2::UnitY, LinearColor::Blue);
-	r.DrawPoint(currentPosition - Vector2::UnitY, LinearColor::Blue);
-	r.DrawPoint(currentPosition + Vector2::One, LinearColor::Blue);
-	r.DrawPoint(currentPosition - Vector2::One, LinearColor::Blue);
-	r.DrawPoint(currentPosition + Vector2(1.f,-1.f), LinearColor::Blue);
-	r.DrawPoint(currentPosition - Vector2(1.f,-1.f), LinearColor::Blue);
+	r.DrawPoint(pointAPosition, LinearColor::Blue);
+	r.DrawPoint(pointAPosition + Vector2::UnitX, LinearColor::Blue);
+	r.DrawPoint(pointAPosition - Vector2::UnitX, LinearColor::Blue);
+	r.DrawPoint(pointAPosition + Vector2::UnitY, LinearColor::Blue);
+	r.DrawPoint(pointAPosition - Vector2::UnitY, LinearColor::Blue);
+	r.DrawPoint(pointAPosition + Vector2::One, LinearColor::Blue);
+	r.DrawPoint(pointAPosition - Vector2::One, LinearColor::Blue);
+	r.DrawPoint(pointAPosition + Vector2(1.f,-1.f), LinearColor::Blue);
+	r.DrawPoint(pointAPosition - Vector2(1.f,-1.f), LinearColor::Blue);
+	
+	
+	
+	r.DrawPoint(pointBPosition, LinearColor::Red);
+	r.DrawPoint(pointBPosition + Vector2::UnitX, LinearColor::Red);
+	r.DrawPoint(pointBPosition - Vector2::UnitX, LinearColor::Red);
+	r.DrawPoint(pointBPosition + Vector2::UnitY, LinearColor::Red);
+	r.DrawPoint(pointBPosition - Vector2::UnitY, LinearColor::Red);
+	r.DrawPoint(pointBPosition + Vector2::One, LinearColor::Red);
+	r.DrawPoint(pointBPosition - Vector2::One, LinearColor::Red);
+	r.DrawPoint(pointBPosition + Vector2(1.f, -1.f), LinearColor::Red);
+	r.DrawPoint(pointBPosition - Vector2(1.f, -1.f), LinearColor::Red);
 
-	r.PushStatisticText("Coordinate : " + currentPosition.ToString());
+	r.DrawLine(pointAPosition, pointBPosition, LinearColor::Cyan);
+	
+	Vector2 pointA2B = pointBPosition - pointAPosition;
+	
+	r.PushStatisticText("Point A Coordinate : " + pointAPosition.ToString());
+	r.PushStatisticText("Point B Coordinate : " + pointBPosition.ToString());
+	r.PushStatisticText("Degree : " + std::to_string(atan2(pointA2B.Y, pointA2B.X) * (180.f / Math::PI)));
 
 }
 
