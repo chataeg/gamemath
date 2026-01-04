@@ -55,9 +55,14 @@ void SoftRenderer::LoadScene2D()
 // 게임 로직과 렌더링 로직이 공유하는 변수
 Vector2 pointAPosition(100.f, 100.f);
 Vector2 pointBPosition = Vector2(pointAPosition.X + 100.f, pointAPosition.Y + 100.f);
-Vector2 boxPosition(-200.f, 100.f);
+Vector2 boxPosition(-200.f, 150.f);
+Vector2 cooltimeboxPosition(-200.f, -150.f);
 
 float currentBoxDegree = 0.f; 
+bool spacebarPressed = false;
+float currentCooltime = 0.f;
+float cooltimeLimit = 5.f;
+
 
 // 게임 로직을 담당하는 함수
 void SoftRenderer::Update2D(float InDeltaSeconds)
@@ -76,6 +81,22 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 	pointBPosition += deltaPosition;
 
 	float deltaDegree = input.GetAxis(InputAxis::WAxis) * rotateSpeed * InDeltaSeconds;
+	
+	if (input.IsPressed(InputButton::Space))
+	{
+		spacebarPressed = true;
+	}
+
+	if (spacebarPressed)
+	{
+		currentCooltime += InDeltaSeconds;
+
+		if (currentCooltime >= cooltimeLimit)
+		{
+			spacebarPressed = false;
+			currentCooltime = 0.f;
+		}
+	}
 
 	currentBoxDegree += deltaDegree;
 }
@@ -121,7 +142,8 @@ void SoftRenderer::Render2D()
 	r.DrawPoint(pointBPosition - Vector2(1.f, -1.f), LinearColor::Red);
 
 	r.DrawLine(pointAPosition, pointBPosition, LinearColor::Cyan);
-	
+	r.DrawLine(pointAPosition, pointAPosition + Vector2(0.f,180.f), LinearColor::Black);
+
 	Vector2 pointA2B = pointBPosition - pointAPosition;
 
 	static float halfSize = 100.f;
@@ -136,10 +158,23 @@ void SoftRenderer::Render2D()
 				squares.push_back(Vector2(x, y));
 			}
 		}
-	}
+	}	
 
 	float sin = 0.f, cos = 0.f;
 	Math::GetSinCos(sin, cos, currentBoxDegree);
+
+	/*
+		기저벡터 (1,0) , (0,1) 이 있을 때 θ만큼 각각 회전한다고 하자.
+
+		기저벡터 (1,0) θ만큼 회전 -> (cosθ, sinθ)
+		기저벡터 (0,1) θ만큼 회전 -> (-sinθ, cosθ)
+		
+		(cosθ, sinθ) + (-sinθ, cosθ) = (cosθ - sinθ, sinθ + cosθ)
+
+		벡터 A 를 θ 만큼 회전한 좌표는 (cosθ - sinθ, sinθ + cosθ) 임을 알 수 있다.
+
+	*/
+
 
 	for (const auto& iter : squares)
 	{
@@ -149,11 +184,68 @@ void SoftRenderer::Render2D()
 		r.DrawPoint(translatedV, LinearColor::Black);
 	}
 
+	static std::vector<Vector2> cooltimesquares;
+
+	if (cooltimesquares.empty())
+	{
+		for (float x = -halfSize; x <= halfSize; x += 0.25f)
+		{
+			for (float y = -halfSize; y <= halfSize; y += 0.25f)
+			{
+				cooltimesquares.push_back(Vector2(x,y));
+			}
+		}
+	}
+
+
+	/*
+	*	12시 ~ 6시  : 0 ~ 180
+	*	6시 ~ 24시  : -180 ~ 0 
+	* 
+	*	따라서 6시 ~ 24시 범위일 때는 360(2PI)를 더해준다.
+	*	그러면 아래 범위처럼 사용이 가능하다.
+	* 
+	*	12시 ~ 6시  : 0 ~ 180
+	*	6시 ~ 24시  : 180 ~ 360
+	* 	
+	*	변환한 범위를 토대로 비율을 계산하여 그려주면 된다.
+	* 
+	*/
+
+	for (const auto& iter : cooltimesquares)
+	{
+		float curDegree = atan2(iter.Y , iter.X);
+		
+		curDegree = curDegree - Math::PI / 2;
+		curDegree = -curDegree;
+
+		if (curDegree < 0)
+			curDegree += Math::TwoPI;
+
+		float curRatio = currentCooltime / cooltimeLimit * Math::TwoPI;
+
+		Vector2 translatedV = cooltimeboxPosition + iter;
+
+		if(curDegree < curRatio)	
+			r.DrawPoint(translatedV, LinearColor::DimGray);
+	}
 
 	r.PushStatisticText("Point A Coordinate : " + pointAPosition.ToString());
 	r.PushStatisticText("Point B Coordinate : " + pointBPosition.ToString());
-	r.PushStatisticText("Vector A2B Degree : " + std::to_string(atan2(pointA2B.Y, pointA2B.X) * (180.f / Math::PI)));
-	r.PushStatisticText("Box Degree : " + std::to_string(currentBoxDegree));
+
+	
+
+	float A2BDegree = -(atan2(pointA2B.Y, pointA2B.X) - Math::HalfPI);
+
+	if (A2BDegree < 0)
+		A2BDegree += Math::TwoPI;
+
+	r.PushStatisticText("Vector A2B Degree : " + std::to_string( A2BDegree * (180.f / Math::PI)));
+	
+	if (spacebarPressed)
+	{
+		r.PushStatisticText("Cooltime !! Degree : " + std::to_string(currentCooltime));
+	}
 }
 
 // 메시를 그리는 함수
